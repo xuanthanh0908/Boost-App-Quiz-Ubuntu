@@ -4,11 +4,7 @@ const http = require('http')
 const socketIo = require('socket.io')
 const cors = require('cors')
 const { socketHandler } = require('./src/socket/socketHandler.js')
-const {
-  verifyAccessTokenForSocket,
-} = require('./src/socket/verifyAccessTokenSocket')
-const ApiError = require('./src/utils/ApiError')
-const { chatHandler } = require('./src/socket/chatHandler')
+const ApiError = require('./src/utils/catch/ApiError')
 
 app.use(cors)
 let server
