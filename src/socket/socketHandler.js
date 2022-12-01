@@ -1,21 +1,32 @@
-const globalSocket = require('../utils/globalSocket')
+const globalSocket = require('../utils/socket/globalSocket')
 const Quiz = require('../models/quiz.model')
 const loadash = require('lodash')
-const Bot = require('../utils/Bot')
+const Bot = require('../utils/bot/Bot')
 const { faker } = require('@faker-js/faker')
-const { verifyAccessTokenForSocket } = require('./verifyAccessTokenSocket')
+const UserTracking = require('../utils/statistical/userTracking')
+// const { verifyAccessTokenForSocket } = require('./verifyAccessTokenSocket')
 // const redisClient = require('../redis/redisClient')
-
+let dataUserPending = []
 let connectedSocket = {}
 let list = []
 let bot = null
 let listBot = []
+let userForUserTracking = {
+  total: 0,
+  array: [],
+}
+let glbSocket = new globalSocket(dataUserPending)
+const timeoutEntriesBot = {}
 const pvpNamespaces = '/pvp'
 
 async function socketHandler(connectingSockets) {
   return async (socket) => {
     // socket.auth = false
     socket.on('login', ({ username, id }) => {
+      const trackUser = new UserTracking(id, userForUserTracking)
+      trackUser.updateStatisticalData()
+      console.log('==== TOTAL USER === ', userForUserTracking.total)
+      console.log('==== DETAIL USER === ', userForUserTracking.array)
       /// verify accessToken
       // verifyAccessTokenForSocket(accessToken, (err, result) => {
       //   if (!err || result) {
@@ -52,10 +63,10 @@ async function socketHandler(connectingSockets) {
     })
 
     socket.on('killAllRoom', () => {
-      globalSocket.removeAllRoom()
+      glbSocket.removeAllRoom()
     })
     socket.on('killRoom', ({ roomId }) => {
-      globalSocket.removeRoomFromList(roomId)
+      glbSocket.removeRoomFromList(roomId)
     })
     /// event join user to room --- play game
     socket.on('join', ({ room, username }) => {
@@ -69,9 +80,10 @@ async function socketHandler(connectingSockets) {
     /// random quizz by category -- loading all quizzs on first approach at room
     socket.on('streamQuizs', async (data) => {
       const { username, roomId, category, optionLanguage = 'En' } = data
+      let query = category.replaceAll('+', '\\+')
       // send data to all client online in room except  sender
       const quiz = await Quiz.find({
-        category: { $regex: category, $options: 'i' },
+        category: { $regex: new RegExp('^' + query + '$'), $options: 'gi' },
       }).limit(40)
       let randDomSample = loadash.sampleSize(quiz, process.env.PVP_MAX_QUESTION)
       const AllQuestForBot = randDomSample
@@ -130,22 +142,24 @@ async function socketHandler(connectingSockets) {
         //     point: point ?? 0,
         //     username: username ?? 'random',
         //   })
-        const findRoom = globalSocket.getInfoRoom(roomId)
+        const findRoom = glbSocket.getInfoRoom(roomId)
         if (findRoom.status === 'playing') {
-          globalSocket.updateStatusRoom(roomId, 'user1done')
+          glbSocket.updateStatusRoom(roomId, 'user1done')
         } else {
           if (findRoom.status === 'user1done') {
-            globalSocket.updateStatusRoom(roomId, 'done')
+            glbSocket.updateStatusRoom(roomId, 'done')
           }
         }
-        connectingSockets.io
-          .of(pvpNamespaces)
-          .in(roomId)
-          .emit('statusCheck', {
-            status: result ? true : false,
-            result: result ?? '@',
-            username: username,
-          })
+        socket.to(roomId).emit('statusCheck', {
+          status: result ? true : false,
+          result: result ?? '@',
+          username: username,
+        })
+        socket.emit('statusCheck', {
+          status: result ? true : false,
+          result: result ?? '@',
+          username: username,
+        })
       }
     })
     // handle event user wanna stop find opponent (cancel)
@@ -154,13 +168,12 @@ async function socketHandler(connectingSockets) {
       console.log('::::::::::::::SOCKET - CANCEL FINDOPPENT:::::::::::::::::::')
       /// check if user findOpponent but in the middle time user cancel find opponent
       /// remove Room user has created before
-      globalSocket.removeRoomFromList(roomId)
+      glbSocket.removeRoomFromList(roomId)
       /// emit leave room
       socket.leave(roomId)
     })
     // event match opponent
     socket.on('findopponent', (data) => {
-      let timeoutEntriesBot = null
       console.log('::::::::::::::SOCKET - FINDOPPENT:::::::::::::::::::')
       const { id, displayname, category } = data
       const userInfo = {
@@ -168,68 +181,57 @@ async function socketHandler(connectingSockets) {
         displayname,
       }
       /// check exits room to play
-      const listUser = globalSocket.getListUser()
-      const { filterRooms, listGlobal } = globalSocket.checkRoomPlay(
-        listUser,
-        list,
-      )
-
-      timeoutEntriesBot = setTimeout(() => {
+      const RoomIDCheck = glbSocket.checkRoomPlay(list, category)
+      glbSocket.addUserToRoom(RoomIDCheck, userInfo, category)
+      timeoutEntriesBot.RoomIDCheck = setTimeout(() => {
         console.log('===============SOCKET - BOT==============')
         const max = 1000
         const min = 10
-        const findBot = listBot.findIndex(
-          (m) => m.roomID === filterRooms[0]?.room,
-        )
-        const checkRoom = globalSocket.getInfoRoom(filterRooms[0].room)
-        if (findBot === -1 && checkRoom.users.length < 2) {
+        const checkRoom = glbSocket.getInfoRoom(RoomIDCheck)
+        if (checkRoom.users.length < 2) {
           bot = new Bot(
             faker.name,
             Math.random() * (max - min) + min,
-            filterRooms[0]?.room,
+            RoomIDCheck,
             category,
           )
-          listBot.push({
-            roomID: filterRooms[0]?.room,
+          listBot.splice(listBot.length, 0, {
+            roomID: RoomIDCheck,
             bot: bot,
           })
         }
-      }, 60 * 1000)
+      }, 10000)
 
-      globalSocket.addUserToRoom(filterRooms[0].room, userInfo, category)
       /// send room id to client and client will join with that room di
-      socket.emit('roomserver', { roomId: filterRooms[0]?.room })
+      socket.emit('roomserver', { roomId: RoomIDCheck })
       /// loading - done - when room has enough 2 players
-      const getInfoRoom = globalSocket.getInfoRoom(filterRooms[0].room)
+      const getInfoRoom = glbSocket.getInfoRoom(RoomIDCheck)
       if (getInfoRoom && getInfoRoom.status === 'playing') {
-        clearTimeout(timeoutEntriesBot)
+        clearTimeout(timeoutEntriesBot.RoomIDCheck)
+        delete timeoutEntriesBot.RoomIDCheck
         socket
           .to(getInfoRoom.room)
           .emit('searching', { loading: false, users: getInfoRoom.users })
         socket.emit('searching', { loading: false, users: getInfoRoom.users })
       }
       console.log(
-        '::::::::::::::SOCKET - ROOMLIST:::::::::::::::::::::::',
-        globalSocket.getListUser(),
+        '::::::::::::::SOCKET - ROOMLIST :::::::::::::::::::::::',
+        glbSocket.getAllUserPendding(),
       )
     })
     /// event that server listen client disconnect
     socket.on('end', ({ username, roomID }) => {
       socket.leave(roomID)
-      const findUser = globalSocket.getInfoRoomByUserName(username)
+      const findUser = glbSocket.getInfoRoomByUserName(username)
       if (findUser) {
-        globalSocket.removeUserFromRoom(username)
+        glbSocket.removeUserFromRoom(username)
       }
-      console.log(
-        '::::::::::::::SOCKET - LEVEAVE ROOM:::::::::::::::::::::::',
-        globalSocket.getAllUserPendding(),
-      )
     })
     /// event that server listen client disconnect
     socket.on('disconnect', (reason) => {
-      const findUser = globalSocket.getInfoRoomByUserName(socket.username)
+      const findUser = glbSocket.getInfoRoomByUserName(socket.username)
       if (findUser) {
-        globalSocket.removeUserFromRoom(socket.username)
+        glbSocket.removeUserFromRoom(socket.username)
       }
       console.log(reason)
       delete connectedSocket[socket.username]
@@ -237,7 +239,7 @@ async function socketHandler(connectingSockets) {
     setInterval(() => {
       console.log(
         '::::::::::::::SOCKET - ROOMLIST - REFRESH:::::::::::::::::::::::',
-        globalSocket.removeRoomTimeout(Date.now()),
+        glbSocket.removeRoomTimeout(Date.now()),
       )
     }, process.env.TIME_TO_REFRESH_REMOVE_ROOM * 1000)
   }
@@ -245,4 +247,5 @@ async function socketHandler(connectingSockets) {
 
 module.exports = {
   socketHandler,
+  userForUserTracking,
 }

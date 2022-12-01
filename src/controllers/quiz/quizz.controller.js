@@ -1,6 +1,6 @@
-const catchAsync = require('../../utils/catchAsync')
+const catchAsync = require('../../utils/catch/catchAsync')
 const { quizService, userService } = require('../../services')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 const { Quiz } = require('../../models')
 const loadash = require('lodash')
 
@@ -85,7 +85,7 @@ const updateQuiz = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     totalTimeInMs: `${Date.now() - req.startTime} ms`,
-    data: updated,
+    message: 'Quizz has been updated !!',
   })
 })
 

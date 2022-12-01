@@ -1,6 +1,6 @@
-const catchAsync = require('../../utils/catchAsync')
+const catchAsync = require('../../utils/catch/catchAsync')
 const { categoryService } = require('../../services')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 const User = require('../../models/user.model')
 
 /**
@@ -39,7 +39,6 @@ const getCategoryByName = catchAsync(async (req, res, next) => {
 
 const getAllCategories = catchAsync(async (req, res, next) => {
   const findAll = await categoryService.getAllCate()
-  console.log(findAll)
   res.status(200).json({
     success: true,
     totalTimeInMs: `${Date.now() - req.startTime} ms`,

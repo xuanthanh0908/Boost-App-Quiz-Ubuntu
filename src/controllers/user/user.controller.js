@@ -1,7 +1,7 @@
 const httpStatus = require('http-status')
 const userService = require('../../services/user/user.service')
-const ApiError = require('../../utils/ApiError')
-const catchAsync = require('../../utils/catchAsync')
+const ApiError = require('../../utils/catch/ApiError')
+const catchAsync = require('../../utils/catch/catchAsync')
 const { uploadfile, removefile } = require('../../cloudinary')
 
 const getAllUsers = catchAsync(async (req, res, next) => {
@@ -31,6 +31,7 @@ const updateUserById = catchAsync(async (req, res, next) => {
   res.json({
     success: true,
     totalTimeInMs: `${Date.now() - req.startTime} ms`,
+    message: 'User has been updated !!',
   })
 })
 
@@ -40,17 +41,17 @@ const getUserByField = catchAsync(async (req, res, next) => {
   selectedUsers = null
   if (key && key === 'displayname') {
     selectedUsers = await userService.getUserByField({
-      [key]: { $regex: value[key], $option: 'i' },
+      [key]: { $regex: value[key] },
     })
-  }
-  selectedUsers = await userService.getUserByField({ [key]: value[key] })
+  } else selectedUsers = await userService.getUserByField({ [key]: value[key] })
   if (!selectedUsers) {
-    throw new ApiError(404, 'user not found')
+    throw new ApiError(404, 'User not found')
   }
+  const { password, ...rest } = selectedUsers._doc
   res.status(200).json({
     success: true,
     totalTimeInMs: `${Date.now() - req.startTime} ms`,
-    data: selectedUsers,
+    data: rest,
   })
 })
 
@@ -70,13 +71,13 @@ const createUser = catchAsync(async (req, res, next) => {
   res.status(201).json({
     success: true,
     totalTimeInMs: `${Date.now() - req.startTime} ms`,
-    message: 'user successfully created',
+    message: 'User has been added !!',
   })
 })
 const uploadPhoto = catchAsync(async (req, res, next) => {
   const uploader = async (path) => await uploadfile(path, 'BOOST')
   const file = req.file
-  const { userId } = req.body
+  const { userId } = req.params
   if (!file) {
     throw new ApiError(501, 'Not implemented !!')
   }

@@ -1,5 +1,5 @@
 const { Category } = require('../../models')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 
 /**
  *

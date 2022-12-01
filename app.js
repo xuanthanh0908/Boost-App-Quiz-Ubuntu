@@ -10,7 +10,7 @@ const { errorHandler } = require('./src/middlewares/Error')
 const app = express()
 const config = require('./src/config/config')
 const { MainRoutes } = require('./src/routes/v1/mainRoutes')
-const requestTime = require('./src/middlewares/RequestTime')
+const requestTime = require('./src/middlewares/requestTime')
 
 // set limited request
 // const limiter = rateLimit({

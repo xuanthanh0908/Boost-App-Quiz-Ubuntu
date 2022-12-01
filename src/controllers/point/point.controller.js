@@ -1,6 +1,6 @@
-const catchAsync = require('../../utils/catchAsync')
+const catchAsync = require('../../utils/catch/catchAsync')
 const pointService = require('../../services')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 const User = require('../../models/user.model')
 
 // getPoints from the parameter of the URI

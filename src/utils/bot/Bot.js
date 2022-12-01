@@ -37,9 +37,7 @@ class Bot {
     let that = this
     that.OnCheckAnswer()
     /// first question
-    this.timeout = setTimeout(() => {
-      that.Join()
-    }, 2000)
+    that.Join()
   }
 
   FirstQuestion() {
@@ -58,10 +56,10 @@ class Bot {
   OnCheckAnswer() {
     this.socket.on('statusCheck', (data) => {
       const { username: identifiedFromServer } = data
-      if (this.currentIndex < process.env.PVP_MAX_QUESTION) {
+      if (this.currentIndex < this.question.length) {
         if (this.name === identifiedFromServer) {
+          this.Run(this.currentIndex + 1)
           this.currentIndex = this.currentIndex + 1
-          this.Run(this.currentIndex)
         } else {
           clearTimeout(this.timeout)
           clearTimeout(this.timeoutFirstAppoarch)
@@ -99,26 +97,28 @@ class Bot {
     }
   }
   Run(index) {
-    const botAnswer = this.chooseAnswer(
-      index,
-      this.question[index].questionAnswer['listsEn'],
-      this.question[index].correctOption.optionEn,
-    )
-    this.timoutAnswer = setTimeout(() => {
-      console.log('==========BOT-ANWSER==========')
-      console.log('ID: ', this.question[index]._id)
-      console.log('INDEX: ', index)
-      console.log('ANSWER: ', botAnswer.finalAnswer)
-      console.log('ROOMID: ', this.roomId)
-      console.log('TIME: ', botAnswer.timeAnswer)
-      this.socket.emit('checkAnswer', {
-        quizId: this.question[index]._id,
-        quizIndex: index,
-        answer: botAnswer.finalAnswer,
-        username: this.name,
-        roomId: this.roomId,
-      })
-    }, botAnswer.timeAnswer)
+    if (index < this.question.length) {
+      const botAnswer = this.chooseAnswer(
+        index,
+        this.question[index].questionAnswer['listsEn'],
+        this.question[index].correctOption.optionEn,
+      )
+      this.timoutAnswer = setTimeout(() => {
+        console.log('==========BOT-ANWSER==========')
+        console.log('ID: ', this.question[index]._id)
+        console.log('INDEX: ', index)
+        console.log('ANSWER: ', botAnswer.finalAnswer)
+        console.log('ROOMID: ', this.roomId)
+        console.log('TIME: ', botAnswer.timeAnswer)
+        this.socket.emit('checkAnswer', {
+          quizId: this.question[index]._id,
+          quizIndex: index,
+          answer: botAnswer.finalAnswer,
+          username: this.name,
+          roomId: this.roomId,
+        })
+      }, botAnswer.timeAnswer)
+    }
   }
   getName() {
     return this.name

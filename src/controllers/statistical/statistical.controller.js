@@ -1,6 +1,6 @@
 const { User } = require('../../models')
-const catchAsync = require('../../utils/catchAsync')
-
+const { userForUserTracking } = require('../../socket/socketHandler')
+const catchAsync = require('../../utils/catch/catchAsync')
 const getAllNewUser = catchAsync(async (req, res, next) => {
   const { startDate, endDate } = req.query
   const newUser = await User.aggregate([
@@ -141,9 +141,17 @@ const getAllNewUserByGender = catchAsync(async (req, res, next) => {
     data: newUser,
   })
 })
+const getAllOnline = catchAsync(async (req, res, next) => {
+  res.status(200).json({
+    success: true,
+    totalTimeInMs: `${Date.now() - req.startTime} ms`,
+    data: userForUserTracking,
+  })
+})
 
 module.exports = {
   getAllNewUser,
   getAllNewUserByAge,
   getAllNewUserByGender,
+  getAllOnline,
 }

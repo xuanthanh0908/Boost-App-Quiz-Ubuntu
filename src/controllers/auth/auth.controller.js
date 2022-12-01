@@ -1,6 +1,6 @@
-const catchAsync = require('../../utils/catchAsync')
+const catchAsync = require('../../utils/catch/catchAsync')
 const bcrypt = require('bcryptjs')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 const config = require('../../config/config')
 const jwt = require('jsonwebtoken')
 const { userService } = require('../../services')
@@ -9,7 +9,7 @@ const firebase = require('../../config/firebase')
 const {
   verifyRefreshToken,
 } = require('../../services/auth/verifyRefreshToken.service')
-const { checkNullInput } = require('../../utils/checkExitsField')
+const { checkNullInput } = require('../../utils/catch/checkExitsField')
 
 const refreshToken = catchAsync(async (req, res, next) => {
   const { refreshToken } = req.body
@@ -123,7 +123,6 @@ const Login = catchAsync(async (req, res, next) => {
         },
       })
     } catch (error) {
-      console.log(error)
       throw new ApiError(403, error.message)
     }
   }

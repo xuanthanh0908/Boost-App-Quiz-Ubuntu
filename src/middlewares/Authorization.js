@@ -1,6 +1,6 @@
 const { getUserById } = require('../services/user/user.service')
-const ApiError = require('../utils/ApiError')
-const catchAsync = require('../utils/catchAsync')
+const ApiError = require('../utils/catch/ApiError')
+const catchAsync = require('../utils/catch/catchAsync')
 
 const authPage = (permission) =>
   catchAsync(async (req, res, next) => {
@@ -10,7 +10,7 @@ const authPage = (permission) =>
       throw new ApiError(404, 'User not found !!')
     }
     const { role } = user
-    if (!role) throw new ApiError(401, 'You are not authenticated !!');
+    if (!role) throw new ApiError(401, 'You are not authenticated !!')
     if (!permission.includes(role)) {
       throw new ApiError(403, `You are not authorization !!`)
     }

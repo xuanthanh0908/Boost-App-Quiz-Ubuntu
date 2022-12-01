@@ -1,8 +1,8 @@
-const ApiError = require('../../utils/ApiError')
-const catchAsync = require('../../utils/catchAsync')
+const ApiError = require('../../utils/catch/ApiError')
+const catchAsync = require('../../utils/catch/catchAsync')
 const dailyService = require('../../services/dailytask/dailytask.service')
 const User = require('../../models/user.model')
-const { checkNullInput } = require('../../utils/checkExitsField')
+const { checkNullInput } = require('../../utils/catch/checkExitsField')
 const lodash = require('lodash')
 
 // get daily task by userId
@@ -20,7 +20,6 @@ const getdailyTask = catchAsync(async (req, res, next) => {
 })
 // add daily task by userId
 const adddailyTask = catchAsync(async (req, res, next) => {
-  console.log(req.body)
   checkNullInput(req.body, ['userId', 'categories', 'receivedDate'])
   const user = await User.findById(req.body.userId)
   if (!user) {

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const ApiError = require('../utils/ApiError')
+const ApiError = require('../utils/catch/ApiError')
 const config = require('../config/config')
 
 const verifyAccessTokenForSocket = (token, handleError) => {

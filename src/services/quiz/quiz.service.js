@@ -1,6 +1,6 @@
 const { Quiz } = require('../../models')
 const httpStatus = require('http-status')
-const ApiError = require('../../utils/ApiError')
+const ApiError = require('../../utils/catch/ApiError')
 
 /**
  *
@@ -35,7 +35,6 @@ const addQuiz = async (fields) => {
  */
 const updateQuizById = async (id, fields) => {
   const quiz = await Quiz.findByIdAndUpdate(id, fields)
-  console.log(quiz)
   return quiz
 }
 /**

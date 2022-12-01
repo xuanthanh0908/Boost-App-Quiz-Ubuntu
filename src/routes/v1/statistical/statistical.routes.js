@@ -6,6 +6,7 @@ const authPage = require('../../../middlewares/Authorization')
 router.get('/user', statisticalController.getAllNewUser)
 router.get('/user/gender', statisticalController.getAllNewUserByGender)
 router.get('/user/age', statisticalController.getAllNewUserByAge)
+router.get('/user/online', statisticalController.getAllOnline)
 // endpoints statistical for category
 router.get('/category', statisticalController.getAllNewUser)
 router.get('/category/gender', statisticalController.getAllNewUserByGender)
